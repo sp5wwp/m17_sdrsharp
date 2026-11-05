@@ -1,0 +1,11 @@
+core/build*/
+plugin/bin/
+plugin/obj/
+plugin/tests/*/bin/
+plugin/tests/*/obj/
+plugin/tests/*/out/
+dist/
+sdrsharp-sdk/
+*.cf32
+*.s16
+*.sym

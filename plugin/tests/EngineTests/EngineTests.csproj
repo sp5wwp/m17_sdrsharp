@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Linux/Windows test of the plugin's non-UI code against the real native library.
+       Run: M17RX_LIBRARY=/path/libm17rx.so dotnet run -c Release, with the test data directory as the argument -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Native/*.cs" />
+    <Compile Include="../../src/Engine/*.cs" />
+  </ItemGroup>
+</Project>

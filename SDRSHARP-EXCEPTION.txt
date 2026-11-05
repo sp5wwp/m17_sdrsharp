@@ -1,0 +1,25 @@
+SDR# plugin exception (AdditionRef-SDRSharp-exception)
+=====================================================
+
+libm17rx is distributed under the GNU General Public License, version 2 or any later version (see COPYING), together with the following
+additional permission.
+
+As a special exception, the copyright holders of libm17rx, including the
+copies of libm17 code built into it, give you permission to load libm17rx
+into the SDR# (SDRSharp) receiver software by Airspy, through SDR#'s plugin
+mechanism, and to run and distribute that combination, without SDR# or any
+other part of SDR# being covered by the GNU General Public License.
+
+This permission applies only to SDR# itself. Everything else about libm17rx
+stays under the GPL: if you distribute libm17rx, modified or not, you must do
+so under the GPL with this exception, and provide or offer its complete
+source code as the GPL requires. Plugin code written to use libm17rx inside
+SDR# (for example the M17 decoder plugin) may be licensed by its authors as
+they choose.
+
+If you modify libm17rx, you may extend this exception to your version, but
+you are not obliged to. If you do not wish to do so, delete this exception
+statement from your version.
+
+Third-party code in third_party/codec2-mod remains under its own licence, the
+GNU Lesser General Public License 2.1, and needs no exception.

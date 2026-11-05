@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    M17 Decoder plugin for SDR# (v1921 / v1922).
+
+    Build on Windows:
+      dotnet build -c Release -p:SdrSharpLib="C:\path\to\sdrplugins\lib"
+    SdrSharpLib is the "lib" folder of airspy's "SDR# SDK for Plugin Developers"
+    (SDRSharp.Common.dll, SDRSharp.Radio.dll). Those files are only referenced:
+    they are not copied to the output, because the SDK licence does not allow
+    passing them on.
+
+    The output folder bin/Release/<tfm>/ is the plugin: SDRSharp.M17.dll plus the
+    native decoder in x86/ and x64/. Copy it into SDR#'s Plugins folder as one
+    subfolder, for example Plugins/M17Decoder/.
+  -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net9.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>SDRSharp.M17</AssemblyName>
+    <RootNamespace>SDRSharp.M17</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>M17 Decoder for SDR#</Product>
+    <Copyright>Copyright 2026 Wojciech Kaczmarski, SP5WWP</Copyright>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SdrSharpLib Condition="'$(SdrSharpLib)' == ''">$(MSBuildThisFileDirectory)..\sdrsharp-sdk\lib</SdrSharpLib>
+    <NativeDir Condition="'$(NativeDir)' == ''">$(MSBuildThisFileDirectory)native</NativeDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <None Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SDRSharp.Common">
+      <HintPath>$(SdrSharpLib)\SDRSharp.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SDRSharp.Radio">
+      <HintPath>$(SdrSharpLib)\SDRSharp.Radio.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The native decoder, one build per process architecture. -->
+  <ItemGroup>
+    <None Include="$(NativeDir)\x86\m17rx.dll" Link="x86\m17rx.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(NativeDir)\x64\m17rx.dll" Link="x64\m17rx.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\COPYING" Link="COPYING" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\SDRSHARP-EXCEPTION.txt" Link="SDRSHARP-EXCEPTION.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CheckSdrSharpLib" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(SdrSharpLib)\SDRSharp.Common.dll')"
+           Text="SDRSharp.Common.dll not found in '$(SdrSharpLib)'. Pass -p:SdrSharpLib=&quot;...\sdrplugins\lib&quot; (the lib folder of airspy's SDR# plugin SDK)." />
+    <Error Condition="!Exists('$(NativeDir)\x64\m17rx.dll') Or !Exists('$(NativeDir)\x86\m17rx.dll')"
+           Text="Native decoder not found in '$(NativeDir)\x86' and '\x64'. Build it with build.sh (Linux) or see core/README.md." />
+  </Target>
+</Project>
