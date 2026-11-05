@@ -1,7 +1,8 @@
 SDR# plugin exception (AdditionRef-SDRSharp-exception)
 =====================================================
 
-libm17rx is distributed under the GNU General Public License, version 2 or any later version (see COPYING), together with the following
+libm17rx is distributed under the GNU General Public License, version 2 or
+(at your option) any later version (see COPYING), together with the following
 additional permission.
 
 As a special exception, the copyright holders of libm17rx, including the
