@@ -27,7 +27,7 @@
 static int dbg_on = -1;
 #define DBG(...) do { if (dbg_on < 0) dbg_on = getenv("M17RX_DEBUG") != NULL; if (dbg_on) fprintf(stderr, __VA_ARGS__); } while (0)
 
-#define VERSION_STR     "libm17rx 0.2.0"
+#define VERSION_STR     "libm17rx 0.3.0"
 
 #define BUF_CAP         (32768)
 #define FRAME_SMP       (SYM_PER_FRA * M17RX_SPS)     /* 1920 */

@@ -22,7 +22,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SDRSharp.M17</AssemblyName>
     <RootNamespace>SDRSharp.M17</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.3.0</Version>
     <Product>M17 Decoder for SDR#</Product>
     <Copyright>Copyright 2026 Wojciech Kaczmarski, SP5WWP</Copyright>
     <PlatformTarget>AnyCPU</PlatformTarget>

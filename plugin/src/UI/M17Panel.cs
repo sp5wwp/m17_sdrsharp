@@ -550,8 +550,8 @@ namespace SDRSharp.M17.UI
             _lDiag = Fixed("", T.Small, 8, dim: true);
             AddFixed(t, _lDiag);
 
-            var about = new StringBuilder("M17 Decoder 0.2.2");
-            if (_eng != null)   // "libm17rx 0.2.0 (libm17 1.4.1)" -> "libm17rx 0.2.0, libm17 1.4.1", single spaces only
+            var about = new StringBuilder("M17 Decoder 0.3.0");
+            if (_eng != null)   // "libm17rx 0.3.0 (libm17 1.4.1)" -> "libm17rx 0.2.0, libm17 1.4.1", single spaces only
                 about.Append("\n" + System.Text.RegularExpressions.Regex.Replace(
                     M17Engine.NativeVersion.Replace(" (", ", ").Replace(")", ""), @"\s+", " ").Trim());
             about.Append("\nGPL-2.0-or-later with an SDR# exception");

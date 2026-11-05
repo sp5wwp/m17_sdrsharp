@@ -9,3 +9,4 @@ sdrsharp-sdk/
 *.cf32
 *.s16
 *.sym
+build.log
