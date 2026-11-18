@@ -1,7 +1,7 @@
 # M17 Decoder for SDR#
 
-An M17 receiver plugin for SDR# (v1921 / v1922, .NET 9 and .NET 10 builds,
-32- and 64-bit). It decodes M17 voice and packets from any receiver SDR# supports,
+An M17 receiver plugin for SDR# (v1921 / v1922, .NET 10 builds, 32- and
+64-bit). It decodes M17 voice and packets from any receiver SDR# supports,
 plays the voice through SDR#'s audio path and shows link information and signal
 measurements.
 
@@ -81,26 +81,40 @@ with the decoded voice. It goes through a 150 ms jitter buffer with latency
 capped at 600 ms, and is resampled to SDR#'s audio rate. The plugin works out by
 itself whether that audio is mono or stereo.
 
-## Building (Windows)
+## Installing
 
-Needs the .NET 9 or 10 SDK and airspy's **SDR# SDK for Plugin Developers**. The
-SDK's licence doesn't allow it to be redistributed, so it is not included:
-download it from airspy.com and point the build at its `lib` folder.
-
-```
-.\build-plugin.ps1 -SdrSharpLib "C:\path\to\sdrplugins\lib" -Install "C:\path\to\SDRSharp\Plugins"
-```
-
-This builds `plugin\SDRSharp.M17.csproj` (target `net9.0-windows`, which runs on
-.NET 9 and 10 hosts) and assembles `dist\M17Decoder\`. With `-Install`, it also
-copies that folder into SDR#'s `Plugins` folder. Use `-Framework net10.0-windows`
-to build for .NET 10 only.
+Download `M17Decoder.zip` from the Releases page and extract it into SDR#'s
+`Plugins` folder, so that you get `Plugins\M17Decoder\SDRSharp.M17.dll`. The
+release is built for .NET 10 and does not load in SDR# builds that run on .NET 9.
 
 ### Running
 
 Restart SDR#, open **M17 Decoder** from the plugin menu, and on its Settings tab
 press **Set up receiver for M17** (NFM, 12.5 kHz filter, squelch off). Then tune
 to an M17 signal.
+
+## Building (Windows)
+
+Needs the .NET 10 SDK and airspy's **SDR# VDK** (the plugin development kit,
+formerly the "SDR# SDK for Plugin Developers"). The VDK's licence doesn't allow
+it to be redistributed, so it is not included: download it from airspy.com and
+point the build at the folder you unpacked it to.
+
+```
+.\build-plugin.ps1 -SdrSharpLib "C:\path\to\vdk" -Framework net10.0-windows -Install "C:\path\to\SDRSharp\Plugins"
+```
+
+The script finds `SDRSharp.Common.dll` and `SDRSharp.Radio.dll` itself (in the
+VDK they are in `lib\ref`). It builds `plugin\SDRSharp.M17.csproj` for
+`net10.0-windows` and assembles `dist\M17Decoder\` and `dist\M17Decoder.zip`,
+the file to attach to a release. With `-Install`, it also copies that folder into
+SDR#'s `Plugins` folder.
+
+The VDK's libraries are built for .NET 10, so a `net9.0-windows` build against them
+fails (error CS1705). A .NET 9 build needs the libraries of the older SDK.
+
+If PowerShell refuses to run the script, allow scripts for that window first:
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 
 ## Licence
 
