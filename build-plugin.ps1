@@ -1,21 +1,21 @@
 # Build the SDR# plugin on Windows and assemble an install folder and zip.
 #
-#   .\build-plugin.ps1 -SdrSharpLib "C:\dev\sdrsharp-plugin-sdk\sdrplugins\lib"
+#   .\build-plugin.ps1 -SdrSharpLib "C:\dev\vdk"
 #   .\build-plugin.ps1 -SdrSharpLib ... -Install "C:\SDRSharp\Plugins"     # also copies it into SDR#
 #
-# Needs the .NET 9 or 10 SDK. The native decoder (plugin\native\x86, x64) is prebuilt;
-# rebuild it with build.sh on Linux if you change the C code.
+# Needs the .NET 10 SDK and airspy's SDR# VDK (its libraries are built for .NET 10).
+# The native decoder (plugin\native\x86, x64) is prebuilt; rebuild it with build.sh on Linux if you change the C code.
 # SPDX-License-Identifier: GPL-2.0-or-later WITH AdditionRef-SDRSharp-exception
 param(
     [Parameter(Mandatory = $true)][string]$SdrSharpLib,
     [string]$Install = "",
-    [string]$Framework = "net9.0-windows"
+    [string]$Framework = "net10.0-windows"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $proj = Join-Path $root "plugin\SDRSharp.M17.csproj"
 
-# Accept the SDK's lib folder or any folder above it; find SDRSharp.Common.dll ourselves.
+# Accept the VDK's lib\ref folder or any folder above it; find SDRSharp.Common.dll ourselves.
 if (-not (Test-Path $SdrSharpLib)) { throw "SdrSharpLib folder not found: $SdrSharpLib" }
 $SdrSharpLib = (Resolve-Path $SdrSharpLib).Path.TrimEnd('\')
 if (-not (Test-Path (Join-Path $SdrSharpLib "SDRSharp.Common.dll"))) {
@@ -23,7 +23,7 @@ if (-not (Test-Path (Join-Path $SdrSharpLib "SDRSharp.Common.dll"))) {
     if ($null -eq $found) { throw "SDRSharp.Common.dll not found in or below $SdrSharpLib" }
     $SdrSharpLib = $found.DirectoryName
 }
-Write-Host "SDR# SDK lib: $SdrSharpLib"
+Write-Host "SDR# VDK lib: $SdrSharpLib"
 
 $log = Join-Path $root "build.log"
 dotnet build $proj -c Release "-p:M17Framework=$Framework" "-p:SdrSharpLib=$SdrSharpLib" -clp:ErrorsOnly -flp:"logfile=$log;verbosity=normal"

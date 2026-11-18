@@ -3,11 +3,11 @@
     M17 Decoder plugin for SDR# (v1921 / v1922).
 
     Build on Windows:
-      dotnet build -c Release -p:SdrSharpLib="C:\path\to\sdrplugins\lib"
-    SdrSharpLib is the "lib" folder of airspy's "SDR# SDK for Plugin Developers"
-    (SDRSharp.Common.dll, SDRSharp.Radio.dll). Those files are only referenced:
-    they are not copied to the output, because the SDK licence does not allow
-    passing them on.
+      dotnet build -c Release -p:SdrSharpLib="C:\path\to\vdk\lib\ref"
+    SdrSharpLib is the "lib\ref" folder of airspy's SDR# VDK (SDRSharp.Common.dll,
+    SDRSharp.Radio.dll). The VDK's libraries are built for .NET 10, so the default
+    framework is net10.0-windows. Those files are only referenced: they are not
+    copied to the output, because the VDK licence does not allow passing them on.
 
     The output folder bin/Release/<tfm>/ is the plugin: SDRSharp.M17.dll plus the
     native decoder in x86/ and x64/. Copy it into SDR#'s Plugins folder as one
@@ -15,7 +15,7 @@
   -->
   <PropertyGroup>
     <!-- Pick the framework with -p:M17Framework=...: restore ignores a TargetFramework given on the command line. -->
-    <M17Framework Condition="'$(M17Framework)' == ''">net9.0-windows</M17Framework>
+    <M17Framework Condition="'$(M17Framework)' == ''">net10.0-windows</M17Framework>
     <TargetFramework>$(M17Framework)</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
@@ -30,7 +30,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <SdrSharpLib Condition="'$(SdrSharpLib)' == ''">$(MSBuildThisFileDirectory)..\sdrsharp-sdk\lib</SdrSharpLib>
+    <SdrSharpLib Condition="'$(SdrSharpLib)' == ''">$(MSBuildThisFileDirectory)..\vdk\lib\ref</SdrSharpLib>
     <NativeDir Condition="'$(NativeDir)' == ''">$(MSBuildThisFileDirectory)native</NativeDir>
   </PropertyGroup>
 
@@ -61,7 +61,7 @@
 
   <Target Name="CheckSdrSharpLib" BeforeTargets="ResolveAssemblyReferences">
     <Error Condition="!Exists('$(SdrSharpLib)\SDRSharp.Common.dll')"
-           Text="SDRSharp.Common.dll not found in '$(SdrSharpLib)'. Pass -p:SdrSharpLib=&quot;...\sdrplugins\lib&quot; (the lib folder of airspy's SDR# plugin SDK)." />
+           Text="SDRSharp.Common.dll not found in '$(SdrSharpLib)'. Pass -p:SdrSharpLib=&quot;...\vdk\lib\ref&quot; (the lib\ref folder of airspy's SDR# VDK)." />
     <Error Condition="!Exists('$(NativeDir)\x64\m17rx.dll') Or !Exists('$(NativeDir)\x86\m17rx.dll')"
            Text="Native decoder not found in '$(NativeDir)\x86' and '\x64'. Build it with build.sh (Linux) or see core/README.md." />
   </Target>
