@@ -14,7 +14,9 @@
     subfolder, for example Plugins/M17Decoder/.
   -->
   <PropertyGroup>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">net9.0-windows</TargetFramework>
+    <!-- Pick the framework with -p:M17Framework=...: restore ignores a TargetFramework given on the command line. -->
+    <M17Framework Condition="'$(M17Framework)' == ''">net9.0-windows</M17Framework>
+    <TargetFramework>$(M17Framework)</TargetFramework>
     <OutputType>Library</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

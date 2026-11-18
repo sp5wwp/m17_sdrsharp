@@ -26,7 +26,7 @@ if (-not (Test-Path (Join-Path $SdrSharpLib "SDRSharp.Common.dll"))) {
 Write-Host "SDR# SDK lib: $SdrSharpLib"
 
 $log = Join-Path $root "build.log"
-dotnet build $proj -c Release -f $Framework "-p:SdrSharpLib=$SdrSharpLib" -clp:ErrorsOnly -flp:"logfile=$log;verbosity=normal"
+dotnet build $proj -c Release "-p:M17Framework=$Framework" "-p:SdrSharpLib=$SdrSharpLib" -clp:ErrorsOnly -flp:"logfile=$log;verbosity=normal"
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "Errors:" -ForegroundColor Red
