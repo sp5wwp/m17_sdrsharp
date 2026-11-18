@@ -252,6 +252,25 @@ ev, st, pcm = rx(iq(s_text, "text", rate=R), R, "--pub", "N0CALL=" + PUB11)
 e = end_of(ev)
 check("unsigned stream: no signature state", e and e["sig"] == 0)
 
+# Authentication Frame (spec 2.1.0): signer, destination, time of signing; originator check
+TS_2026 = 189302400  # 2026-01-01T00:00:00Z in seconds since 2020-01-01
+ev, st, pcm = rx(iq(s_sig, "signed", rate=R), R, "--pub", "N0CALL=" + PUB11)
+e = end_of(ev)
+check("Authentication Frame: signer, destination, time of signing",
+      e and e["sig"] == 1 and e["sig_signer"] == "N0CALL" and e["sig_dst"] == "@ALL"
+      and e["sig_time"] > TS_2026 and e["sig_not_originator"] == 0,
+      f"signer '{e['sig_signer'] if e else ''}' dst '{e['sig_dst'] if e else ''}' time {e['sig_time'] if e else '-'}")
+s_sig_ecd = symbols("signed_ecd", "voice", payload=c2, src="N0CALL", priv="11" * 32, meta_type=2, cf1="SP5WWP")
+ev, st, pcm = rx(iq(s_sig_ecd, "signed_ecd", rate=R), R, "--pub", "N0CALL=" + PUB11)
+e = end_of(ev)
+check("Authentication Frame: signer is not the ECD originator", e and e["sig"] == 1 and e["sig_not_originator"] == 1,
+      f"sig {e['sig'] if e else '-'} not_originator {e['sig_not_originator'] if e else '-'}")
+s_sig_ecd2 = symbols("signed_ecd2", "voice", payload=c2, src="N0CALL", priv="11" * 32, meta_type=2, cf1="N0CALL")
+ev, st, pcm = rx(iq(s_sig_ecd2, "signed_ecd2", rate=R), R, "--pub", "N0CALL=" + PUB11)
+e = end_of(ev)
+check("Authentication Frame: signer is the ECD originator", e and e["sig"] == 1 and e["sig_not_originator"] == 0,
+      f"sig {e['sig'] if e else '-'} not_originator {e['sig_not_originator'] if e else '-'}")
+
 # ---------------------------------------------------------------- 8. data stream: no audio
 ev, st, pcm = rx(iq(s_data, "data", rate=R), R)
 check("data stream: CAN, no audio", ev[0]["link"]["data_type"] == 1 and ev[0]["link"]["can"] == 5 and len(pcm) == 0,

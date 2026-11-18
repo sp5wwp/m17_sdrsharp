@@ -23,7 +23,8 @@ namespace SDRSharp.M17.Engine
             return string.Join(",",
                 e.Time.ToString("yyyy-MM-dd HH:mm:ss", c), kind, Q(l.Source), Q(l.Destination), l.Can.ToString(c),
                 Q(l.DataTypeText), Q(l.EncryptionState), l.Signed ? "1" : "0",
-                e.Duration.ToString("F2", c), e.Frames.ToString(c), e.FramesLost.ToString(c), e.Evm.ToString("F2", c), Q(info), Q(e.SignatureText));
+                e.Duration.ToString("F2", c), e.Frames.ToString(c), e.FramesLost.ToString(c), e.Evm.ToString("F2", c), Q(info),
+                Q(e.AuthText.Length > 0 ? e.SignatureText + "; " + e.AuthText : e.SignatureText));
         }
 
         public static void Append(string path, M17Event e)

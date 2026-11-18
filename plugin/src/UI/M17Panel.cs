@@ -550,7 +550,7 @@ namespace SDRSharp.M17.UI
             _lDiag = Fixed("", T.Small, 8, dim: true);
             AddFixed(t, _lDiag);
 
-            var about = new StringBuilder("M17 Decoder 0.3.0");
+            var about = new StringBuilder("M17 Decoder 0.4.0");
             if (_eng != null)   // "libm17rx 0.3.0 (libm17 1.4.1)" -> "libm17rx 0.2.0, libm17 1.4.1", single spaces only
                 about.Append("\n" + System.Text.RegularExpressions.Regex.Replace(
                     M17Engine.NativeVersion.Replace(" (", ", ").Replace(")", ""), @"\s+", " ").Trim());
@@ -821,7 +821,7 @@ namespace SDRSharp.M17.UI
                 if (e.Link.Encryption != M17Encryption.None)
                     info += ", " + e.Link.EncryptionState;
                 if (e.Link.Signed)
-                    info += ", signature " + e.SignatureText;
+                    info += ", signature " + e.SignatureText + (e.AuthText.Length > 0 ? ", " + e.AuthText : "");
                 if (e.Link.MetaSummary.Length > 0)
                     info += ", " + e.Link.MetaSummary;
             }
@@ -920,13 +920,18 @@ namespace SDRSharp.M17.UI
             _lSig.Text = !l.Signed ? "Not signed"
                 : end == null ? "Signed · checked at the end"
                 : end.Signature == M17Signature.Valid ? "Signature valid · " + end.SignatureKey
+                    + (end.SignedAtUtc != null ? " · " + end.SignedAtUtc.Value.ToLocalTime().ToString("HH:mm:ss", Inv) : "")
                 : end.Signature == M17Signature.Invalid ? "Signature INVALID"
                 : "Signed · " + end.SignatureText;
 
             if (st.InvertedHint)
                 ShowNotice("The signal looks inverted. Turn on Invert polarity in Settings.");
             else if (end != null && end.Signature == M17Signature.Invalid)
-                ShowNotice("No public key verifies this signature: the sender may not be " + l.Source + ".");
+                ShowNotice("The signature does not verify with the public key of " + (end.Signer.Length > 0 ? end.Signer : l.Source) + ".");
+            else if (end != null && end.Signature == M17Signature.Valid && end.SignerNotOriginator)
+                ShowNotice("Signed by " + end.Signer + ", not by the station the stream names (" + (l.MetaKind == M17MetaKind.ExtendedCallsign ? l.Ecd1 : l.Source) + ").");
+            else if (end != null && end.Signature == M17Signature.Valid && end.SigStale)
+                ShowNotice(string.Format(Inv, "Signed {0:F0} s off this PC's clock: check the clock, or this may be a replayed transmission.", end.SigAgeS));
             else if (l.Decrypt == M17Decrypt.NoKey)
                 ShowNotice(l.Encryption == M17Encryption.Aes
                     ? "Audio is muted: set an AES-" + (128 + 64 * l.EncSubtype) + " key in Settings."
@@ -936,7 +941,7 @@ namespace SDRSharp.M17.UI
             else if (l.DataType == M17DataType.VoiceData)
                 ShowNotice("Voice + data (Codec2 1600) is not decoded in this version.");
             else if (end != null && end.Signature == M17Signature.NoKey)
-                ShowNotice("Add the sender's public key in Settings to check signatures.");
+                ShowNotice("Add the public key of " + (end.Signer.Length > 0 ? end.Signer : l.Source) + " in Settings to check signatures.");
             else
                 ShowNotice("");
 

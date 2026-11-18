@@ -71,10 +71,10 @@ namespace SDRSharp.M17.Native
         [FieldOffset(128)] public M17RxLink Link;
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 1952)]
+    [StructLayout(LayoutKind.Explicit, Size = 1984)]
     public unsafe struct M17RxEvent
     {
-        public const int NativeSize = 1952;
+        public const int NativeSize = 1984;
         [FieldOffset(0)] public int Kind;
         [FieldOffset(4)] public int EndReason;
         [FieldOffset(8)] public int Frames;
@@ -83,11 +83,15 @@ namespace SDRSharp.M17.Native
         [FieldOffset(20)] public float EvmRmsPct;
         [FieldOffset(24)] public int SigState;
         [FieldOffset(28)] public fixed byte SigKey[32];
-        [FieldOffset(64)] public M17RxLink Link;
-        [FieldOffset(288)] public int Protocol;
-        [FieldOffset(292)] public int Length;
-        [FieldOffset(296)] public fixed byte Data[825];
-        [FieldOffset(1121)] public fixed byte Sms[826];
+        [FieldOffset(60)] public fixed byte SigSigner[12];
+        [FieldOffset(72)] public fixed byte SigDst[12];
+        [FieldOffset(84)] public uint SigTime;
+        [FieldOffset(88)] public int SigNotOriginator;
+        [FieldOffset(96)] public M17RxLink Link;
+        [FieldOffset(320)] public int Protocol;
+        [FieldOffset(324)] public int Length;
+        [FieldOffset(328)] public fixed byte Data[825];
+        [FieldOffset(1153)] public fixed byte Sms[826];
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 20)]

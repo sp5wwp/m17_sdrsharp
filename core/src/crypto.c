@@ -142,15 +142,6 @@ uint32_t m17_lfsr_frame(uint32_t s, int subtype, uint8_t out[16])
 
 /* ------------------------------------------------------------------ signatures */
 
-void m17_digest_update(uint8_t d[16], const uint8_t p[16])
-{
-    for (int i = 0; i < 16; i++)
-        d[i] ^= p[i];
-    uint8_t t = d[0];
-    memmove(d, d + 1, 15);
-    d[15] = t;
-}
-
 int m17_pubkey_parse(const uint8_t *in, int len, uint8_t out[64])
 {
     const struct uECC_Curve_t *c = uECC_secp256r1();
@@ -165,7 +156,7 @@ int m17_pubkey_parse(const uint8_t *in, int len, uint8_t out[64])
     return uECC_valid_public_key(out, c) ? 0 : -1;
 }
 
-int m17_sig_verify(const uint8_t pub[64], const uint8_t digest[16], const uint8_t sig[64])
+int m17_sig_verify(const uint8_t pub[64], const uint8_t hash[32], const uint8_t sig[64])
 {
-    return uECC_verify(pub, digest, 16, sig, uECC_secp256r1()) ? 1 : 0;
+    return uECC_verify(pub, hash, 32, sig, uECC_secp256r1()) ? 1 : 0;
 }

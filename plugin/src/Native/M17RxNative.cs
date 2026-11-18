@@ -11,7 +11,7 @@ namespace SDRSharp.M17.Native
     public static unsafe class M17RxNative
     {
         public const string Lib = "m17rx";
-        public const int ApiVersion = 2;
+        public const int ApiVersion = 3;
         public const int EyePoints = 21;
         public const int HistBins = 64;
         public const int EvmHistory = 64;

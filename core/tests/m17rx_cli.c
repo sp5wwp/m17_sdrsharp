@@ -151,6 +151,11 @@ int main(int argc, char **argv)
                 printf(",\"reason\":%d,\"frames\":%d,\"lost\":%d,\"duration\":%.2f,\"evm\":%.2f,\"sig\":%d,\"sig_key\":",
                        ev->end_reason, ev->frames, ev->frames_lost, ev->duration_s, ev->evm_rms_pct, ev->sig_state);
                 json_str(ev->sig_key);
+                printf(",\"sig_signer\":");
+                json_str(ev->sig_signer);
+                printf(",\"sig_dst\":");
+                json_str(ev->sig_dst);
+                printf(",\"sig_time\":%u,\"sig_not_originator\":%d", (unsigned)ev->sig_time, ev->sig_not_originator);
             }
             if (ev->kind == M17RX_EV_PACKET || ev->kind == M17RX_EV_PACKET_BAD)
             {

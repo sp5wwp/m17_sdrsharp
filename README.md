@@ -27,10 +27,14 @@ measurements.
   8, 16 and 24-bit scramblers. The scrambler keystream is rebuilt from the frame
   number after a lost frame or a late join. Without a matching key the audio is
   muted.
-- **Signatures:** ECDSA over secp256r1 (micro-ecc), checked against the sender's key. The result shows
-  when the transmission ends: valid (with the key's name), invalid, no public
-  keys, not checkable (frames were missed or reception started late), or not
-  received.
+- **Signatures** (M17 Specification 2.1.0): a SHA-256 hash over the stream and its
+  Authentication Frame, signed with ECDSA over secp256r1 (micro-ecc), checked with the
+  public key stored under the signer's callsign. The result shows when the transmission
+  ends: valid (with the key's name), invalid, no public key, not checkable (frames were
+  missed or reception started late), or not received. The decoder also shows the signer,
+  the destination and the time of signing, and warns when the signer is not the station
+  the stream names or when the time of signing is more than 300 s off the PC's clock.
+  Signatures in the older (XOR digest) format do not verify.
 - **Setup:** receiver setup (NFM, 12.5 kHz, squelch off), and a
   warning when the signal's polarity is inverted.
 
@@ -43,7 +47,7 @@ On the Settings tab, under **Keys**:
 - **AES key:** 32, 48 or 64 hex digits. The size must match the transmission's
   (AES-128/192/256).
 - **Scrambler seed:** 2, 4 or 6 hex digits (8, 16 or 24-bit LFSR).
-- **Public keys:** a name (usually the callsign) and the P-256 public key, either
+- **Public keys:** a name (the signer's callsign) and the P-256 public key, either
   as 128 hex digits (X||Y, as gr-m17's coder prints with Debug on), 130 digits
   with the 04 prefix, 66 digits compressed, or PEM (`openssl ec -pubout`). The
   receiver never needs a private key.
@@ -103,4 +107,5 @@ to an M17 signal.
 GPL-2.0-or-later with an additional permission for SDR# (see `COPYING` and
 `SDRSHARP-EXCEPTION.txt`). Codec2-mod in `core/third_party/codec2-mod` is
 LGPL-2.1. micro-ecc in `core/third_party/micro-ecc` is BSD-2-Clause, its notice
-is in `THIRD-PARTY-NOTICES.txt`, which ships with the plugin.
+is in `THIRD-PARTY-NOTICES.txt`, which ships with the plugin. sha-2 (SHA-256) in
+`core/third_party/sha-2` is Unlicense or 0BSD; `core/src/m17sig.c` is MIT.

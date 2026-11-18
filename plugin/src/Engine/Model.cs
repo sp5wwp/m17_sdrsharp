@@ -133,6 +133,14 @@ namespace SDRSharp.M17.Engine
         public LinkInfo Link = new LinkInfo();
         public M17Signature Signature;
         public string SignatureKey = "";
+
+        // Authentication Frame of a signed stream (M17 spec 2.1.0); SignedAtUtc null: not received
+        public const int SigTimeWindowS = 300; // accepted offset from this PC's clock (spec default)
+        public string Signer = "", SigDestination = "";
+        public DateTime? SignedAtUtc;
+        public double SigAgeS;                 // this PC's clock minus the time of signing
+        public bool SignerNotOriginator;
+        public bool SigStale => SignedAtUtc != null && Math.Abs(SigAgeS) > SigTimeWindowS;
         public byte[] Data = Array.Empty<byte>();
         public string Sms = "";
 
@@ -150,6 +158,14 @@ namespace SDRSharp.M17.Engine
                 r.Link = LinkInfo.From(p->Link);
                 r.Signature = (M17Signature)p->SigState;
                 r.SignatureKey = M17RxNative.Utf8(p->SigKey, 32);
+                if (p->SigTime != 0)
+                {
+                    r.Signer = M17RxNative.Utf8(p->SigSigner, 12);
+                    r.SigDestination = M17RxNative.Utf8(p->SigDst, 12);
+                    r.SignedAtUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(p->SigTime);
+                    r.SigAgeS = (DateTime.UtcNow - r.SignedAtUtc.Value).TotalSeconds;
+                    r.SignerNotOriginator = p->SigNotOriginator != 0;
+                }
                 r.Protocol = p->Protocol;
                 int n = Util.Clamp(p->Length, 0, 33 * 25);
                 r.Data = new byte[n];
@@ -165,11 +181,18 @@ namespace SDRSharp.M17.Engine
         {
             M17Signature.Valid => "valid (" + SignatureKey + ")",
             M17Signature.Invalid => "INVALID",
-            M17Signature.NoKey => "not checked, no key for " + Link.Source,
+            M17Signature.NoKey => "not checked, no key for " + (Signer.Length > 0 ? Signer : Link.Source),
             M17Signature.Incomplete => "not checked, frames missed",
             M17Signature.Missing => "not received",
             _ => "",
         };
+
+        /// <summary>"signer N0CALL, to W1AW, signed 2026-11-18 18:25:30 UTC (time OK)", "" without an Authentication Frame</summary>
+        public string AuthText => SignedAtUtc == null ? ""
+            : string.Format(CultureInfo.InvariantCulture, "signer {0}, to {1}, signed {2:yyyy-MM-dd HH:mm:ss} UTC ({3}){4}",
+                            Signer, SigDestination, SignedAtUtc.Value,
+                            SigStale ? string.Format(CultureInfo.InvariantCulture, "STALE, {0:+0;-0} s off this PC's clock", SigAgeS) : "time OK",
+                            SignerNotOriginator ? ", not the originator" : "");
 
         public string ProtocolText => Protocol switch
         {

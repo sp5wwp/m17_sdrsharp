@@ -160,7 +160,10 @@ static unsafe class Program
               endA != null && endA.Link.Decrypt == M17Decrypt.Decrypted && endA.Signature == M17Signature.Valid
               && endA.SignatureKey == "N0CALL" && auA.Any(v => Math.Abs(v) > 0.05f) && keyNote.Contains("broken"),
               endA == null ? "no end" : $"{endA.Link.EncryptionState}, signature {endA.SignatureText}; note: {keyNote.Replace("\n", " / ")}");
-        Check("CSV line with the signature", endA != null && CsvLog.Line(endA).EndsWith(",\"valid (N0CALL)\""),
+        // the time-of-signing verdict depends on the age of the cached test signal, so it is not checked
+        Check("CSV line with the signature and the Authentication Frame",
+              endA != null && CsvLog.Line(endA).Contains(",\"valid (N0CALL); signer N0CALL, to @ALL, signed 20")
+              && CsvLog.Line(endA).EndsWith(")\""),
               endA != null ? CsvLog.Line(endA) : "");
         var (evN, auN, _) = Run(Path.Combine(dir, "signed_aes.cf32"), 32000);
         var endN = evN.FirstOrDefault(e => e.Kind == M17EventKind.StreamEnd);

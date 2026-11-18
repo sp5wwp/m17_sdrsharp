@@ -35,7 +35,7 @@ extern "C" {
     #define M17RX_CALL
 #endif
 
-#define M17RX_API_VERSION 2
+#define M17RX_API_VERSION 3
 
 /* ------------------------------------------------------------------ */
 /* Link information                                                    */
@@ -162,10 +162,10 @@ typedef struct
 
 /* m17rx_event_t.sig_state (STREAM_END) */
 #define M17RX_SIG_NONE       0  /* stream not signed */
-#define M17RX_SIG_VALID      1  /* verified with the sender's public key (sig_key: its name) */
-#define M17RX_SIG_INVALID    2  /* all frames received, the sender's public key does not verify it */
-#define M17RX_SIG_NO_KEY     3  /* no public key stored under the sender's callsign */
-#define M17RX_SIG_INCOMPLETE 4  /* frames missed or joined late: the digest is unknown */
+#define M17RX_SIG_VALID      1  /* verified with the signer's public key (sig_key: its name) */
+#define M17RX_SIG_INVALID    2  /* all frames received, the signer's public key does not verify it */
+#define M17RX_SIG_NO_KEY     3  /* no public key stored under the signer's callsign */
+#define M17RX_SIG_INCOMPLETE 4  /* frames missed, joined late or no Authentication Frame: the hash is unknown */
 #define M17RX_SIG_MISSING    5  /* the stream ended before all four signature frames */
 
 typedef struct
@@ -178,6 +178,11 @@ typedef struct
     float    evm_rms_pct;        /* STREAM_END: average over the transmission */
     int32_t  sig_state;          /* STREAM_END: M17RX_SIG_* */
     char     sig_key[32];        /* M17RX_SIG_VALID: name of the key that verified it */
+    /* STREAM_END of a signed stream, from its Authentication Frame (M17 spec 2.1.0; sig_time 0: not received) */
+    char     sig_signer[12];     /* signer callsign: the station whose key signed the stream */
+    char     sig_dst[12];        /* destination as sent by the signer */
+    uint32_t sig_time;           /* time of signing, seconds since 2020-01-01T00:00:00Z */
+    int32_t  sig_not_originator; /* 1: the signer is not the originator (ECD Callsign Field 1, else SRC) */
     m17rx_link_t link;
 
     /* PACKET */

@@ -18,6 +18,7 @@
 #define M17RX_BUILD 1
 #include "internal.h"
 #include "crypto.h"
+#include "m17sig.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -27,7 +28,7 @@
 static int dbg_on = -1;
 #define DBG(...) do { if (dbg_on < 0) dbg_on = getenv("M17RX_DEBUG") != NULL; if (dbg_on) fprintf(stderr, __VA_ARGS__); } while (0)
 
-#define VERSION_STR     "libm17rx 0.3.0"
+#define VERSION_STR     "libm17rx 0.4.0"
 
 #define BUF_CAP         (32768)
 #define FRAME_SMP       (SYM_PER_FRA * M17RX_SPS)     /* 1920 */
@@ -105,8 +106,10 @@ struct m17rx
     /* per-stream crypto state */
     uint32_t scr_state;
     int scr_next_fn;      /* FN the scrambler state belongs to, -1 unknown */
-    uint8_t digest[16];
-    int digest_ok;        /* digest covers every frame from FN 0 */
+    m17sig_ctx_t sig_ctx; /* stream hash (spec 2.1.0); holds pointers into itself, never copied */
+    int hash_ok;          /* the hash covers every frame from FN 0 */
+    uint8_t auth[16];     /* Authentication Frame payload (FN 7FFB) */
+    int auth_seen;
     uint8_t sig[64];
     int sig_map;          /* signature frames received, bit 0 = FN 7FFC */
     int sig_state;
@@ -224,8 +227,8 @@ static void reset_stream_state(m17rx_t *rx)
     rx->evm_n = 0;
     rx->pkt_len = 0;
     rx->scr_next_fn = -1;
-    memset(rx->digest, 0, sizeof(rx->digest));
-    rx->digest_ok = 0;
+    rx->hash_ok = 0;
+    rx->auth_seen = 0;
     rx->sig_map = 0;
     rx->sig_state = M17RX_SIG_NONE;
     rx->sig_key[0] = 0;
@@ -290,22 +293,30 @@ static int same_call(const char *a, const char *b)
     return *a == *b;
 }
 
-/* all four signature frames are in: check them with the public key stored under the sender's
-   callsign (case-insensitive). Keys under other names are never tried. */
+/* all four signature frames are in: check them with the public key stored under the signer's
+   callsign from the Authentication Frame (case-insensitive). Keys under other names are never tried. */
 static void verify_signature(m17rx_t *rx)
 {
     if (rx->sig_map != 0xF)
         rx->sig_state = M17RX_SIG_MISSING;
-    else if (!rx->digest_ok)
+    else if (!rx->hash_ok || !rx->auth_seen)
         rx->sig_state = M17RX_SIG_INCOMPLETE;
     else
     {
+        uint8_t hash[M17SIG_HASH_LEN], signer[6], dst[6];
+        uint32_t ts;
+        char signer_call[12];
+        m17sig_final(&rx->sig_ctx, hash);
+        rx->hash_ok = 0;
+        m17sig_auth_parse(rx->auth, signer, dst, &ts);
+        decode_callsign_bytes(signer_call, signer);
+
         rx->sig_state = M17RX_SIG_NO_KEY;
         for (int i = 0; i < rx->npub; i++)
         {
-            if (!same_call(rx->pub[i].name, rx->link.src))
+            if (!same_call(rx->pub[i].name, signer_call))
                 continue;
-            if (m17_sig_verify(rx->pub[i].key, rx->digest, rx->sig))
+            if (m17_sig_verify(rx->pub[i].key, hash, rx->sig))
             {
                 rx->sig_state = M17RX_SIG_VALID;
                 snprintf(rx->sig_key, sizeof(rx->sig_key), "%s", rx->pub[i].name);
@@ -652,6 +663,16 @@ static void end_stream(m17rx_t *rx, int reason)
         if (rx->link.valid && rx->link.signed_stream)
             ev.sig_state = rx->sig_state != M17RX_SIG_NONE ? rx->sig_state : M17RX_SIG_MISSING;
         memcpy(ev.sig_key, rx->sig_key, sizeof(ev.sig_key));
+        if (rx->link.valid && rx->link.signed_stream && rx->auth_seen)
+        {
+            uint8_t signer[6], dst[6];
+            m17sig_auth_parse(rx->auth, signer, dst, &ev.sig_time);
+            decode_callsign_bytes(ev.sig_signer, signer);
+            decode_callsign_bytes(ev.sig_dst, dst);
+            /* originator: Callsign Field 1 of the Extended Callsign Data if present, SRC otherwise */
+            const char *orig = rx->link.meta_kind == M17RX_META_ECD ? rx->link.ecd_cf1 : rx->link.src;
+            ev.sig_not_originator = !same_call(ev.sig_signer, orig);
+        }
         push_event(rx, &ev);
     }
     if (rx->packet_active && rx->pkt_len > 0)
@@ -739,14 +760,16 @@ static void handle_str(m17rx_t *rx, const uint8_t data[16], const uint8_t lich[5
     }
 
     const int f = fn & 0x7FFF;
-    const int sig = rx->link.valid && rx->link.signed_stream && f >= 0x7FFC;
+    /* signed streams end with the Authentication Frame (FN 7FFB) and 4 signature frames */
+    const int sig = rx->link.valid && rx->link.signed_stream && f >= (int)M17SIG_FN_SIG;
+    const int auth = rx->link.valid && rx->link.signed_stream && f == (int)M17SIG_FN_AUTH;
 
-    if (!sig)
+    if (!sig && !auth)
     {
         if (rx->expected_fn >= 0 && f != rx->expected_fn)
         {
             int gap = (f - rx->expected_fn) & 0x7FFF;
-            rx->digest_ok = 0; /* a missing frame: the digest can't be rebuilt */
+            rx->hash_ok = 0; /* a missing frame: the hash can't be rebuilt */
             if (gap < 0x100)
             {
                 rx->lost += gap;
@@ -769,15 +792,24 @@ static void handle_str(m17rx_t *rx, const uint8_t data[16], const uint8_t lich[5
         if (f == 0x7FFF)
             verify_signature(rx);
     }
+    else if (auth)
+    {
+        /* the Authentication Frame is sent in the clear and is part of the hash */
+        if (rx->hash_ok)
+            m17sig_frame(&rx->sig_ctx, fn, data);
+        memcpy(rx->auth, data, 16);
+        rx->auth_seen = 1;
+    }
     else
     {
-        /* digest over the payload as transmitted (before decryption), every frame from FN 0 */
+        /* hash over the FN and the payload as transmitted (before decryption), every frame from FN 0 */
         if (f == 0)
         {
-            memset(rx->digest, 0, sizeof(rx->digest));
-            rx->digest_ok = 1;
+            m17sig_init(&rx->sig_ctx);
+            rx->hash_ok = 1;
         }
-        m17_digest_update(rx->digest, data);
+        if (rx->hash_ok)
+            m17sig_frame(&rx->sig_ctx, fn, data);
 
         if (l->valid && l->decrypt == M17RX_DEC_OK)
         {
@@ -803,7 +835,7 @@ static void handle_str(m17rx_t *rx, const uint8_t data[16], const uint8_t lich[5
     if (!l->valid || l->data_type == M17RX_DT_VOICE || l->data_type == M17RX_DT_VOICE_DATA)
     {
         int clear = l->enc_type == M17RX_ENC_NONE || l->decrypt == M17RX_DEC_OK;
-        int play = l->valid && l->data_type == M17RX_DT_VOICE && clear && !sig && vber <= rx->cfg.viterbi_mute;
+        int play = l->valid && l->data_type == M17RX_DT_VOICE && clear && !sig && !auth && vber <= rx->cfg.viterbi_mute;
         if (play)
         {
             int16_t pcm[SAMPLES_PER_FRAME];

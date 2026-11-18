@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "crypto.h"
+#include "m17sig.h"
 #include "uECC.h"
 #ifdef WITH_TINIER
 #include "aes.h"
@@ -96,14 +97,15 @@ int main(void)
     }
     uECC_set_rng(rng);
     const struct uECC_Curve_t *c = uECC_secp256r1();
-    uint8_t priv[32], pub[64], pub2[64], comp[33], digest[16], sig[64];
+    uint8_t priv[32], pub[64], pub2[64], comp[33], hash[32], sig[64];
     memset(priv, 0x11, 32);
     uECC_compute_public_key(priv, pub, c);
-    rng(digest, 16);
-    uECC_sign(priv, digest, 16, sig, c);
-    check("ECDSA P-256: valid signature verifies", m17_sig_verify(pub, digest, sig));
-    digest[3] ^= 1;
-    check("ECDSA P-256: changed digest fails", !m17_sig_verify(pub, digest, sig));
+    rng(hash, 32);
+    uECC_sign(priv, hash, 32, sig, c);
+    check("ECDSA P-256: valid signature verifies", m17_sig_verify(pub, hash, sig));
+    hash[3] ^= 1;
+    check("ECDSA P-256: changed hash fails", !m17_sig_verify(pub, hash, sig));
+    check("M17 stream hash: SHA-256 KATs and the spec 2.1.0 test vector", m17sig_selftest() == 0);
     uECC_compress(pub, comp, c);
     check("public key: compressed form parses to the same key", m17_pubkey_parse(comp, 33, pub2) == 0 && !memcmp(pub, pub2, 64));
     uint8_t bad[64];
